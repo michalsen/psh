@@ -1,0 +1,32 @@
+<?php
+
+/**
+ * @file
+ * Equipment / Model
+ */
+
+
+function equipment_model_schema() {
+ $schema['equipment_model'] = array(
+    'description' => 'The base table Bullhorn Skills.',
+    'fields' => array(
+       'id' => array(
+        'description' => 'key',
+        'type' => 'serial'),
+      'type' => array(
+        'description' => 'tid of equipment type',
+        'type' => 'int',
+        'length' => 8),
+      'brand' => array(
+        'description' => 'tid of equipment brand',
+        'type' => 'int',
+        'length' => 8),
+      'model' => array(
+        'description' => 'model number',
+        'type' => 'varchar',
+        'length' => 255),
+     ),
+    'primary key' => array('id'),
+  );
+    return $schema;
+}

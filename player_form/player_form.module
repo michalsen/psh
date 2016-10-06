@@ -1,0 +1,72 @@
+<?php
+/**
+ *  @file
+ *  Player Archive
+ *  node convert API
+ *
+ *  When a player is archived, the season is set in the archive content type
+ *  using the current year, and the previous year.
+ */
+
+/**
+ * Implements hook_page_alter()
+ * TEST
+ */
+function player_form_page_alter(&$page) {
+  $default_values = getModels();
+  $player = $page['content']['system_main']['nodes'];
+    foreach ($player[arg(1)]['field_equipment']['#items'] as $key => $value) {
+      //dpm($value['value']);
+    }
+}
+
+/**
+ * Implements hook_form_alter()
+ */
+function player_form_form_alter(&$form, &$form_state) {
+  if ($form['#form_id'] == 'player_node_form') {
+    $default_values = getModels();
+    $i=0;
+    foreach ($form['field_equipment']['und'] as $key => $value) {
+     if($key == 'field_fc_model') {
+        $results = db_query('SELECT id, type, brand, model FROM {equipment_model}')->fetchAll();
+        $build_array = build_equipment_arrays();
+        $options[0] = ' -- Choose -- ';
+          foreach ($results as $row) {
+            $brand = node_load($row->brand);
+            $equip = taxonomy_term_load($row->type);
+            $model = $row->model;
+            $options[$row->id] = $brand->title . ' -> ' . $equip->name . ' -> ' . $model;
+          }
+      }
+    if (isset($form['field_equipment']['und'][$i]['#entity_type'])) {
+        $form['field_equipment']['und'][$i]['field_fc_model']['und']['#default_value'] = $default_values[$i];
+        $form['field_equipment']['und'][$i]['field_fc_model']['und']['#options'] = $options;
+      }
+    $i++;
+  }
+    return $form;
+  }
+
+  if ($form['#form_id'] == 'player_archive_node_form') {
+    $node = menu_get_object();
+    $default_values = checkInarray($node->nid);
+    dpm($default_values);
+  }
+}
+
+/**
+ * getModels()
+ */
+function getModels() {
+  $node = menu_get_object();
+  $fc = $node->field_equipment['und'];
+  $default_values = array();
+    foreach ($fc as $key => $value) {
+      $entity = entity_load('field_collection_item', array($value['value']));
+      $default_values[] = array_shift($entity)->field_fc_model['und'][0];
+    }
+  return $default_values;
+}
+
+

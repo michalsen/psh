@@ -1,0 +1,31 @@
+<?php
+
+/**
+ * @file
+ * Player Archive
+ */
+
+
+function player_archive_schema() {
+ $schema['player_archive_equipment'] = array(
+    'description' => 'The base table Bullhorn Skills.',
+    'fields' => array(
+       'nid' => array(
+        'description' => 'Player nid',
+        'type' => 'int',
+        'length' => 8),
+      'equipment' => array(
+        'description' => 'tid of equipment type',
+        'type' => 'int',
+        'length' => 8),
+      'dateadded' => array(
+        'description' => 'time/date',
+        'mysql_type' => 'varchar',
+        'length' => 12),
+      'dateremoved' => array(
+        'description' => 'time/date',
+        'mysql_type' => 'varchar',
+        'length' => 12)),
+  );
+    return $schema;
+}

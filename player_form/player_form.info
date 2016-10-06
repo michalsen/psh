@@ -1,0 +1,6 @@
+; $Id: $
+
+name = Player Form
+description = Equipment Form Brand
+core = "7.x"
+package = PSH

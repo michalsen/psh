@@ -1,0 +1,146 @@
+<?php
+/**
+ *  @file
+ *  Equipment/Model
+ *
+ */
+
+/**
+ * Implements hook_init().
+ */
+function equipment_model_init() {
+  // DELETE ROW
+  if ( arg(1) == 'model' &&
+       preg_match('/[0-9]/', arg(2))) {
+       drupal_set_message(t('Deleting'), 'status', FALSE);
+       db_delete('equipment_model')
+          ->condition('id', arg(2) )
+          ->execute();
+      }
+   }
+
+/**
+ * Implements hook_menu().
+ */
+function equipment_model_menu() {
+  $items = array();
+  $items['admin/model'] = array(
+              'title' => 'Equipment / Model',
+              'page callback' => 'equipment_model_page',
+              'access arguments' => array('access equipment_model content'),
+              'description' => 'Equipment / Model Assignment',
+              'access arguments' => array(''),
+              'type' => MENU_NORMAL_ITEM,
+          );
+   return $items;
+}
+
+function equipment_model_page() {
+    return drupal_get_form('equipment_model_admin_form');
+}
+
+/**
+ * Implements hook_form().
+ */
+function equipment_model_admin_form() {
+
+  $results = db_query('SELECT id, type, brand, model FROM {equipment_model}')->fetchAll();
+  $build_array = build_equipment_arrays();
+
+  $header = array('Delete',
+                  'Brand',
+                  'Equipment',
+                  'Model');
+  $rows = array();
+
+  foreach ($results as $row) {
+
+    $brand = node_load($row->brand);
+    $equip = taxonomy_term_load($row->type);
+
+    $rows[] = array('<a href="/admin/model/' . $row->id . '" name=' . $row->id . '>X</a>',
+                    $brand->title,
+                    $equip->name,
+                    $row->model);
+    }
+
+/**
+ *   FORM ARRAY
+ */
+
+
+  $form['brand'] = array(
+      '#type' => 'select',
+      '#title' => 'Brand',
+      '#options' => $build_array['branding'],
+  );
+
+  $form['equipment'] = array(
+      '#type' => 'select',
+      '#title' => 'Equipment',
+      '#options' => $build_array['equipment'],
+  );
+
+  $form['model'] = array(
+      '#type' => 'textfield',
+      '#title' => 'Model',
+  );
+
+
+  $form['submit'] = array(
+     '#type' => 'submit',
+     '#value' => 'Submit',
+    );
+
+  $form['markup'] = array(
+    '#markup' => theme('table', array('header' => $header, 'rows' => $rows)),
+    '#title' => t(''),
+    );
+
+  $form['#submit'][] = 'equipment_model_admin_submit';
+
+  return $form;
+}
+
+/**
+ * Submit Admin Form
+ */
+function equipment_model_admin_submit($form, &$form_state) {
+   db_insert('equipment_model')
+         ->fields(array('type', 'brand', 'model'))
+         ->values(array(
+           'type'  => $form_state['input']['equipment'],
+           'brand' => $form_state['input']['brand'],
+           'model' => $form_state['input']['model'],
+         ))
+        ->execute();
+
+}
+
+/*
+ * build_equipment_arrays()
+ */
+function build_equipment_arrays() {
+
+  $return_array = array();
+
+  $equip_vid = taxonomy_vocabulary_machine_name_load('equipment');
+  $equip = db_query('SELECT tid, name FROM {taxonomy_term_data} WHERE vid = :vid', array(':vid' => $equip_vid->vid))->fetchAll();
+  $equipment_type =array();
+    foreach ($equip as $key => $value) {
+      $equipment_type[$value->tid] = $value->name;
+     }
+
+
+  $brand = db_query('SELECT nid, title FROM {node} WHERE type = :type', array(':type' => 'brand'))->fetchAll();
+  $brand_name =array();
+    foreach ($brand as $key => $value) {
+      $brand_name[$value->nid] = $value->title;
+     }
+
+   $return_array['equipment'] = $equipment_type;
+   $return_array['branding']  = $brand_name;
+
+   return $return_array;
+
+}

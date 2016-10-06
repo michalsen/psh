@@ -1,0 +1,6 @@
+; $Id: $
+
+name = Player Archive
+description = Node Convert API for Player Season
+core = "7.x"
+package = PSH

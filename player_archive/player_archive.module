@@ -1,0 +1,118 @@
+<?php
+/**
+ *  @file
+ *  Player Archive
+ *  node convert API
+ *
+ *  When a player is archived, the season is set in the archive content type
+ *  using the current year, and the previous year.
+ */
+
+/**
+ * Implements hook_node_convert_presave()
+ */
+function player_archive_node_convert_presave($node, $hook_options = array()) {
+  $season1 = date('Y', time());
+  $season2 = date('Y', time())-1;
+  $node->field_season['und'][0]['value'] = $season1 . '-' . $season2;
+}
+
+/**
+ * Implements hook_node_presave()
+ * Manages Equipment Equipment Archive (player_archive_equipment)
+ */
+function player_archive_node_presave($node) {
+
+  if ($node->type === 'player') {
+
+    $checkInarray = checkInarray($node->nid);
+
+    foreach ($node->field_equipment['und'] as $key => $value) {
+      $currentItems[] = $value['field_fc_model']['und'][0]['value'];
+    }
+
+    foreach ($node->field_equipment['und'] as $key => $value) {
+      $result = db_select('player_archive_equipment', 'p')
+                  ->fields('p')
+                  ->condition('nid', $node->nid,'=')
+                  ->condition('equipment', $value['field_fc_model']['und'][0]['value'], '=')
+                  ->execute()
+                  ->fetchAssoc();
+
+      if (!$result) {
+        if  ($value['field_fc_model']['und'][0]['value'] > 0) {
+          $check = checkItem($node->nid, $value['field_fc_model']['und'][0]['value']);
+          if(!$check){
+            db_insert('player_archive_equipment')
+               ->fields(array('nid' => $node->nid,
+                            'equipment' => $value['field_fc_model']['und'][0]['value'],
+                            'dateadded' => date('Y-m-d', time())))
+               ->execute();
+          }
+        }
+      }
+
+
+    if ($result) {
+      db_update('player_archive_equipment')
+        ->fields(array(
+          'dateremoved' => NULL
+          ))
+        ->condition('nid', $node->nid, '=')
+        ->condition('equipment', $value['field_fc_model']['und'][0]['value'], '=')
+        ->execute();
+    }
+
+
+    $added[] = $value['field_fc_model']['und'][0]['value'];
+
+
+  }
+
+  $arrDiff = array_diff($checkInarray, $currentItems);
+
+  if ($arrDiff) {
+    foreach ($arrDiff as $key => $value) {
+      drupal_set_message(t('archiving equipment'), 'status', FALSE);
+      db_update('player_archive_equipment') // Table name no longer needs {}
+        ->fields(array(
+          'dateremoved' => date('Y-m-d', time())
+          ))
+        ->condition('nid', $node->nid, '=')
+        ->condition('equipment', $value, '=')
+        ->execute();
+      }
+    }
+  }
+}
+
+/**
+ * checkInarray()
+ */
+function checkInarray($nid) {
+    $check = db_select('player_archive_equipment', 'n')
+      ->fields('n', array('nid', 'equipment', 'dateadded', 'dateremoved'))
+      ->condition('nid', $nid,'=')
+      ->execute();
+
+  $checkArray = array();
+  foreach ($check as $key => $value) {
+    $checkArray[] = $value->equipment;
+  }
+
+  return $checkArray;
+}
+
+/**
+ * checkItem()
+ */
+function checkItem($nid, $item) {
+      $result = db_select('player_archive_equipment', 'p')
+                ->fields('p')
+                ->condition('nid', $nid,'=')
+                ->condition('equipment', $item, '=')
+                ->condition('dateremoved', NULL)
+                ->execute()
+                ->fetchObject();
+      return $result;
+}

@@ -1,0 +1,6 @@
+; $Id: $
+
+name = Equipment Model
+description = Model table for equipment/brands
+core = "7.x"
+package = PSH
